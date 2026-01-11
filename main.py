@@ -3,41 +3,46 @@ import cherrypy
 import os
 import json
 
-#pull from config.json
+# Pull from config.json
 with open("config.json") as f:
     config = json.load(f)
-
     HA_URL = config["ha_url"]
     HA_TOKEN = config["ha_token"]
-
     TRACKER_ID = config["tracker_id"]
     BATTERY_ID = config["battery_id"]
     LOCK_ID = config["lock_id"]
     APP_ID = config["app_id"]
+    WEB_PASSWORD = config.get("web_password", "admin") # Default if missing
 
 class PuppyTracker(object):
     @cherrypy.expose
     def index(self):
+        # If not logged in, show login page (handled in HTML via JS or simple redirect)
+        if not cherrypy.session.get('logged_in'):
+            return open("login.html") # We'll separate the login UI for clarity
         return open("index.html")
+
+    @cherrypy.expose
+    def login(self, password):
+        if password == WEB_PASSWORD:
+            cherrypy.session['logged_in'] = True
+            raise cherrypy.HTTPRedirect("/")
+        return "Invalid Password. <a href='/'>Try again</a>"
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def data(self):
+        if not cherrypy.session.get('logged_in'):
+            cherrypy.response.status = 401
+            return {"error": "Unauthorized"}
+
         headers = {"Authorization": f"Bearer {HA_TOKEN}"}
         
         def fetch_ha(eid):
-            headers = {"Authorization": f"Bearer {HA_TOKEN}"}
-            url = f"{HA_URL}/api/states/{eid}"
             try:
-                r = requests.get(url, headers=headers, timeout=5)
-                if r.status_code != 200:
-                    print(f"Error {r.status_code}: Could not reach {eid}")
-                    print(f"Full URL tried: {url}")
-                    return {}
+                r = requests.get(f"{HA_URL}/api/states/{eid}", headers=headers)
                 return r.json()
-            except Exception as e:
-                print(f"Connection Error: {e}")
-                return {}
+            except: return {}
 
         tracker = fetch_ha(TRACKER_ID)
         battery = fetch_ha(BATTERY_ID)
@@ -52,11 +57,14 @@ class PuppyTracker(object):
             "lon": attr.get("longitude"),
             "battery": battery.get("state", "0"),
             "app": app_info.get("state", "None"),
-            "is_locked": lock_info.get("state", "off") # 'on' usually means locked
+            "is_locked": lock_info.get("state", "off")
         }
 
 if __name__ == '__main__':
-
-    cherrypy.config.update({'server.socket_host': '0.0.0.0'})
-    
-    cherrypy.quickstart(PuppyTracker())
+    conf = {
+        '/': {
+            'tools.sessions.on': True,
+            'tools.sessions.timeout': 60, # Minutes
+        }
+    }
+    cherrypy.quickstart(PuppyTracker(), '/', conf)
