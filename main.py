@@ -12,14 +12,13 @@ with open("config.json") as f:
     BATTERY_ID = config["battery_id"]
     LOCK_ID = config["lock_id"]
     APP_ID = config["app_id"]
-    WEB_PASSWORD = config.get("web_password", "admin") # Default if missing
+    WEB_PASSWORD = config.get("web_password", "admin")
 
 class PuppyTracker(object):
     @cherrypy.expose
     def index(self):
-        # If not logged in, show login page (handled in HTML via JS or simple redirect)
         if not cherrypy.session.get('logged_in'):
-            return open("login.html") # We'll separate the login UI for clarity
+            return open("login.html")
         return open("index.html")
 
     @cherrypy.expose
@@ -61,10 +60,19 @@ class PuppyTracker(object):
         }
 
 if __name__ == '__main__':
+    # 1. Global Server Settings
+    cherrypy.config.update({
+        'server.socket_host': '0.0.0.0', # Listen on all network IPs
+        'server.socket_port': 8080,      # You can change this port if needed
+    })
+
+    # 2. Application/Session Settings
     conf = {
         '/': {
             'tools.sessions.on': True,
-            'tools.sessions.timeout': 60, # Minutes
+            'tools.sessions.storage_type': "ram",
+            'tools.sessions.timeout': 30, # Time in MINUTES before automatic timeout
         }
     }
+    
     cherrypy.quickstart(PuppyTracker(), '/', conf)
