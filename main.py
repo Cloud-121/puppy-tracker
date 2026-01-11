@@ -26,11 +26,19 @@ class PuppyTracker(object):
         headers = {"Authorization": f"Bearer {HA_TOKEN}"}
         
         def fetch_ha(eid):
+            headers = {"Authorization": f"Bearer {HA_TOKEN}"}
+            url = f"{HA_URL}/api/states/{eid}"
             try:
-                r = requests.get(f"{HA_URL}/api/states/{eid}", headers=headers)
+                r = requests.get(url, headers=headers, timeout=5)
+                if r.status_code != 200:
+                    print(f"Error {r.status_code}: Could not reach {eid}")
+                    print(f"Full URL tried: {url}")
+                    return {}
                 return r.json()
-            except: return {}
-
+            except Exception as e:
+                print(f"Connection Error: {e}")
+                return {}
+                
         tracker = fetch_ha(TRACKER_ID)
         battery = fetch_ha(BATTERY_ID)
         app_info = fetch_ha(APP_ID)
