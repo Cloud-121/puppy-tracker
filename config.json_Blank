@@ -1,0 +1,8 @@
+{
+  "ha_url": "https://home.#$#$.com",
+  "ha_token": "#$#$#$#$",
+  "tracker_id": "device_tracker.#$#$",
+  "battery_id": "sensor.#$#$_battery_level",
+  "lock_id": "binary_sensor.#$#$#$_device_locked",
+  "app_id": "sensor.#$#$#$#$_last_used_app"
+}
