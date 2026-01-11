@@ -38,7 +38,7 @@ class PuppyTracker(object):
             except Exception as e:
                 print(f"Connection Error: {e}")
                 return {}
-                
+
         tracker = fetch_ha(TRACKER_ID)
         battery = fetch_ha(BATTERY_ID)
         app_info = fetch_ha(APP_ID)
@@ -56,4 +56,7 @@ class PuppyTracker(object):
         }
 
 if __name__ == '__main__':
+
+    cherrypy.config.update({'server.socket_host': '0.0.0.0'})
+    
     cherrypy.quickstart(PuppyTracker())
