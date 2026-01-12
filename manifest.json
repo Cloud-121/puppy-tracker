@@ -1,6 +1,6 @@
 {
-  "name": "Puppy Tracker",
-  "short_name": "Puppy",
+  "name": "puppy tracker",
+  "short_name": "puppy",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f0f2f5",
