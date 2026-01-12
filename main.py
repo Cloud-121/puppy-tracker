@@ -59,23 +59,30 @@ class PuppyTracker(object):
             "is_locked": lock_info.get("state", "off")
         }
 
+if __name__ == '__main__':
+    cherrypy.config.update({
+        'server.socket_host': '0.0.0.0',
+        'server.socket_port': 8080,
+    })
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = os.path.dirname(os.path.abspath(__file__))
 
-conf = {
-    '/': {
-        'tools.sessions.on': True,
-        'tools.sessions.storage_type': "file",
-        'tools.sessions.storage_path': os.path.join(current_dir, "sessions"),
-        # 43200 minutes = 30 days
-        'tools.sessions.timeout': 43200, 
-    },
-    '/manifest.json': {
-        'tools.staticfile.on': True,
-        'tools.staticfile.filename': os.path.abspath("manifest.json")
+    conf = {
+        '/': {
+            'tools.sessions.on': True,
+            'tools.sessions.storage_type': "file",
+            'tools.sessions.storage_path': os.path.join(current_dir, "sessions"),
+            # 43200 minutes = 30 days
+            'tools.sessions.timeout': 43200, 
+        },
+        '/manifest.json': {
+            'tools.staticfile.on': True,
+            'tools.staticfile.filename': os.path.abspath("manifest.json")
+        }
     }
-}
 
-# Ensure the sessions folder exists
-if not os.path.exists(os.path.join(current_dir, "sessions")):
-    os.makedirs(os.path.join(current_dir, "sessions"))
+    # Ensure the sessions folder exists
+    if not os.path.exists(os.path.join(current_dir, "sessions")):
+        os.makedirs(os.path.join(current_dir, "sessions"))
+    
+    cherrypy.quickstart(PuppyTracker(), '/', conf)
