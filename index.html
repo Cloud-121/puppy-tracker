@@ -1,18 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Puppy Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
         :root { --primary: #6c5ce7; --danger: #ff7675; --success: #55efc4; }
-        body { margin: 0; font-family: 'Poppins', sans-serif; background: #f0f2f5; overflow: hidden; }
-        #map { height: 100vh; width: 100%; z-index: 1; }
+        
+        /* Ensure the map actually occupies the screen */
+        html, body { height: 100%; margin: 0; padding: 0; background: #f0f2f5; font-family: 'Poppins', sans-serif; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1; }
 
         .header {
-            position: absolute; top: 20px; left: 20px; z-index: 1000;
-            background: white; padding: 15px 25px; border-radius: 12px;
+            position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000;
+            background: white; padding: 15px 20px; border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 400px;
         }
 
         .bottom-bar {
@@ -22,97 +32,107 @@
             display: flex; justify-content: space-around; align-items: center;
         }
 
+        /* PWA Install Button */
+        #pwa-btn {
+            display: none; position: absolute; top: 100px; left: 20px; z-index: 1001;
+            background: var(--primary); color: white; border: none; padding: 10px 15px;
+            border-radius: 8px; font-weight: 600; font-family: inherit; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
         .stat-box { flex: 1; text-align: center; }
         .stat-label { font-size: 10px; text-transform: uppercase; color: #b2bec3; font-weight: 800; letter-spacing: 1px; }
         .stat-value { font-size: 14px; color: #2d3436; font-weight: 600; margin-top: 4px; }
 
-        .battery-bar {
-            width: 45px; height: 6px; background: #eee; border-radius: 3px;
-            margin: 8px auto 4px; overflow: hidden;
-        }
+        .battery-bar { width: 45px; height: 6px; background: #eee; border-radius: 3px; margin: 8px auto 4px; overflow: hidden; }
         #bat-fill { height: 100%; background: var(--success); width: 0%; transition: 1s ease-in-out; }
 
-        #lock-status { 
-            padding: 4px 10px; border-radius: 8px; font-size: 12px;
-            font-weight: bold; transition: 0.3s;
-        }
+        #lock-status { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; }
         .locked { background: #e1ffed; color: #2ecc71; }
         .unlocked { background: #ffeaa7; color: #d63031; }
 
-        .pulse { width: 16px; height: 16px; background: var(--primary); border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.2); animation: pulse 2s infinite; }
+        .pulse { width: 16px; height: 16px; background: var(--primary); border-radius: 50%; border: 3px solid white; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(108,92,231,0.7); } 70% { box-shadow: 0 0 0 15px rgba(108,92,231,0); } 100% { box-shadow: 0 0 0 0 rgba(108,92,231,0); } }
     </style>
 </head>
 <body>
 
+    <button id="pwa-btn">Add to Home Screen</button>
+
     <div class="header">
-        <h1 id="name" style="margin:0; font-size:20px; color:#2d3436;">Connecting...</h1>
-        <div id="update-time" style="font-size:11px; color:#b2bec3; font-weight:600;">FETCHING DATA...</div>
+        <h1 id="name" style="margin:0; font-size:18px; color:#2d3436;">Connecting...</h1>
+        <div id="update-time" style="font-size:11px; color:#b2bec3;">FETCHING DATA...</div>
     </div>
+
+    <div id="map"></div>
 
     <div class="bottom-bar">
         <div class="stat-box">
             <div class="stat-label">Power</div>
             <div class="battery-bar"><div id="bat-fill"></div></div>
-            <div class="stat-value" id="bat-text">--%</div>
+            <div id="bat-text" class="stat-value">--%</div>
         </div>
-
         <div class="stat-box" style="border-left: 1px solid #f1f2f6; border-right: 1px solid #f1f2f6;">
-            <div class="stat-label">Active App</div>
+            <div class="stat-label">App</div>
             <div id="app-text" class="stat-value">---</div>
         </div>
-
         <div class="stat-box">
             <div class="stat-label">Phone</div>
-            <div style="margin-top:8px;">
-                <span id="lock-status" class="unlocked">UNKNOWN</span>
-            </div>
+            <div style="margin-top:8px;"><span id="lock-status" class="unlocked">---</span></div>
         </div>
     </div>
 
-    <div id="map"></div>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // Initialize map with a fallback view
         var map = L.map('map', { zoomControl: false }).setView([0,0], 2);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
         
-        var marker = L.marker([0,0], { icon: L.divIcon({ className:'pulse', iconSize:[22,22], iconAnchor:[11,11] }) }).addTo(map);
+        var marker = L.marker([0,0], { 
+            icon: L.divIcon({ className:'pulse', iconSize:[22,22], iconAnchor:[11,11] }) 
+        }).addTo(map);
 
         function update() {
-            fetch('/data').then(r => r.json()).then(data => {
-                if(!data.lat) return;
-                
-                const pos = [data.lat, data.lon];
-                marker.setLatLng(pos);
-                map.panTo(pos);
-                if(map.getZoom() < 10) map.setZoom(17);
+            fetch('/data')
+                .then(r => r.json())
+                .then(data => {
+                    if(!data.lat || !data.lon) return;
+                    
+                    const pos = [parseFloat(data.lat), parseFloat(data.lon)];
+                    marker.setLatLng(pos);
+                    map.setView(pos, 17);
 
-                // Update Name & Time
-                document.getElementById('name').innerText = data.name;
-                document.getElementById('update-time').innerText = "LIVE • " + new Date().toLocaleTimeString();
+                    document.getElementById('name').innerText = data.name || "Puppy";
+                    document.getElementById('update-time').innerText = "LIVE • " + new Date().toLocaleTimeString();
+                    document.getElementById('bat-text').innerText = data.battery + "%";
+                    document.getElementById('bat-fill').style.width = data.battery + "%";
+                    document.getElementById('app-text').innerText = data.app === "None" ? "Home" : data.app;
 
-                // Update Battery
-                document.getElementById('bat-text').innerText = data.battery + "%";
-                document.getElementById('bat-fill').style.width = data.battery + "%";
-
-                // Update App
-                document.getElementById('app-text').innerText = data.app === "None" ? "Home Screen" : data.app;
-
-                // Update Lock Status
-                const lockEl = document.getElementById('lock-status');
-                if(data.is_locked === "on" || data.is_locked === "true") {
-                    lockEl.innerText = "locked";
-                    lockEl.className = "locked";
-                } else {
-                    lockEl.innerText = "unlocked";
-                    lockEl.className = "unlocked";
-                }
-            }).catch(e => console.error("Sync Error:", e));
+                    const lockEl = document.getElementById('lock-status');
+                    const locked = (data.is_locked === "on" || data.is_locked === "true" || data.is_locked === "locked");
+                    lockEl.innerText = locked ? "LOCKED" : "UNLOCKED";
+                    lockEl.className = locked ? "locked" : "unlocked";
+                })
+                .catch(e => console.error("Data fetch error:", e));
         }
 
-        setInterval(update, 5000); // 5 second refresh for snappy feeling
+        // PWA Install Logic
+        let deferredPrompt;
+        const pwaBtn = document.getElementById('pwa-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            pwaBtn.style.display = 'block';
+        });
+
+        pwaBtn.addEventListener('click', () => {
+            pwaBtn.style.display = 'none';
+            deferredPrompt.prompt();
+        });
+
+        // Run update immediately and then every 5 seconds
         update();
+        setInterval(update, 5000);
     </script>
 </body>
 </html>

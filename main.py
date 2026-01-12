@@ -60,18 +60,21 @@ class PuppyTracker(object):
         }
 
 if __name__ == '__main__':
-    # 1. Global Server Settings
     cherrypy.config.update({
-        'server.socket_host': '0.0.0.0', # Listen on all network IPs
-        'server.socket_port': 8080,      # You can change this port if needed
+        'server.socket_host': '0.0.0.0',
+        'server.socket_port': 8080,
     })
 
-    # 2. Application/Session Settings
     conf = {
         '/': {
             'tools.sessions.on': True,
             'tools.sessions.storage_type': "ram",
-            'tools.sessions.timeout': 30, # Time in MINUTES before automatic timeout
+            'tools.sessions.timeout': 43200, # 30 Days
+        },
+        # This part ensures the app can see the manifest.json file
+        '/manifest.json': {
+            'tools.staticfile.on': True,
+            'tools.staticfile.filename': os.path.abspath("manifest.json")
         }
     }
     
