@@ -1,15 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Poppins', sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: #f0f2f5; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+
+        .login-card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            text-align: center; 
+            /* Responsive Width: 300px on desktop, slightly less on tiny phones */
+            width: 90%;
+            max-width: 300px; 
+        }
+
         h2 { color: #2d3436; margin-bottom: 20px; }
-        input[type="password"] { width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-family: inherit; }
-        button { background: #6c5ce7; color: white; border: none; padding: 12px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; width: 100%; }
+
+        input[type="password"] { 
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 20px; 
+            border: 2px solid #eee; 
+            border-radius: 10px; 
+            box-sizing: border-box; 
+            font-family: inherit; 
+            /* 16px font size prevents iOS from zooming in automatically when typing */
+            font-size: 16px; 
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="password"]:focus {
+            border-color: #6c5ce7;
+        }
+
+        button { 
+            background: #6c5ce7; 
+            color: white; 
+            border: none; 
+            padding: 12px 30px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            width: 100%; 
+            font-size: 16px;
+            -webkit-appearance: none; /* Fixes button styling on older iOS */
+        }
+
         button:hover { background: #5b4cc4; }
+
+        /* Tablet/Desktop optimization */
+        @media (min-width: 768px) {
+            .login-card {
+                padding: 40px;
+            }
+        }
     </style>
 </head>
 <body>
